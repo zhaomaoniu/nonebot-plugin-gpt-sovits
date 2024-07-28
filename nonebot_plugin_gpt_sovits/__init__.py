@@ -1,0 +1,154 @@
+import random
+import nonebot
+from nonebot import require, on_command
+from nonebot.plugin import PluginMetadata, inherit_supported_adapters
+
+require("nonebot_plugin_alconna")
+
+from nonebot_plugin_alconna import (
+    Args,
+    Field,
+    Voice,
+    Option,
+    Arparma,
+    Alconna,
+    on_alconna,
+)
+
+from .config import Config
+from .utils import generate, get_wav_duration, encode_to_silk
+
+
+if hasattr(nonebot, "get_plugin_config"):
+    plugin_config = nonebot.get_plugin_config(Config)
+else:
+    from nonebot import get_driver
+
+    plugin_config = Config.parse_obj(get_driver().config)
+
+
+__plugin_meta__ = PluginMetadata(
+    name="GPT-SoVITS 语音合成",
+    description="调用 GPT-SoVITS 的 API 生成语音",
+    usage=f"{plugin_config.gpt_sovits_command} [text] [-e emotion] [-l language]",
+    type="application",
+    homepage="https://github.com/zhaomaoniu/nonebot-plugin-gpt-sovits",
+    config=Config,
+    supported_adapters=inherit_supported_adapters("nonebot_plugin_alconna"),
+)
+
+
+emotion_map = {
+    index: emotion.name
+    for index, emotion in enumerate(plugin_config.gpt_sovits_emotion_map)
+}
+emotion_options = "\n".join(
+    [f"{index}: {emotion}" for index, emotion in emotion_map.items()]
+)
+
+
+tts = on_alconna(
+    Alconna(
+        plugin_config.gpt_sovits_command,
+        Args["text", str, Field(completion=lambda: "请输入要转换的文本")],
+        Option(
+            "-e",
+            alias=["--emotion"],
+            args=Args[
+                "emotion",
+                str,
+                Field(
+                    completion=lambda: f"请输入要转换的情绪，可选情绪：\n{emotion_options}"
+                ),
+            ],
+            default="0",
+            help_text=f"可选情绪：\n{emotion_options}",
+        ),
+        Option(
+            "-l",
+            alias=["--language"],
+            args=Args[
+                "language",
+                str,
+                Field(
+                    completion=lambda: "请输入要转换的语言，可选语言：中文、英文、日文、中英混合、日英混合、多语种混合"
+                ),
+            ],
+            default="auto",
+            help_text="可选语言：中文、英文、日文、中英混合、日英混合、多语种混合",
+        ),
+    ),
+    use_cmd_start=True,
+    auto_send_output=True,
+    comp_config={"lite": True},
+    skip_for_unmatch=False,
+    priority=10,
+)
+help_matcher = on_command(
+    "gptsovits帮助", priority=10, block=True, aliases={"gs帮助", "gshelp"}
+)
+
+
+@tts.handle()
+async def handle_tts(arp: Arparma):
+    text: str = arp.main_args["text"]
+    emotion_index: str = arp.options["e"].value or arp.other_args["emotion"]
+    text_language: str = arp.options["l"].value or arp.other_args["language"]
+
+    emotion = plugin_config.gpt_sovits_emotion_map[int(emotion_index)]
+    sentence = random.choice(emotion.sentences)
+
+    refer_wav_path = sentence.path
+    prompt_text = sentence.text
+    prompt_language = sentence.language
+
+    cut_punc = plugin_config.gpt_sovits_cut_punc
+    top_k = plugin_config.gpt_sovits_top_k
+    top_p = plugin_config.gpt_sovits_top_p
+    temperature = plugin_config.gpt_sovits_temperature
+    speed = plugin_config.gpt_sovits_speed
+
+    base_url = plugin_config.gpt_sovits_api_base_url
+
+    try:
+        wav_file = await generate(
+            base_url,
+            refer_wav_path,
+            prompt_text,
+            prompt_language,
+            text,
+            text_language,
+            cut_punc,
+            top_k,
+            top_p,
+            temperature,
+            speed,
+        )
+    except ValueError as e:
+        await tts.finish("生成语音时出现错误，请联系 Bot 维护者查看日志")
+
+    mimetype = "audio/silk" if plugin_config.gpt_sovits_convert_to_silk else "audio/wav"
+    duration = int(get_wav_duration(wav_file))
+
+    if plugin_config.gpt_sovits_convert_to_silk:
+        silk_file = encode_to_silk(wav_file)
+        await tts.finish(Voice(raw=silk_file, mimetype=mimetype, duration=duration))
+    else:
+        await tts.finish(Voice(raw=wav_file, mimetype=mimetype, duration=duration))
+
+
+@help_matcher.handle()
+async def handle_help():
+    await help_matcher.finish(
+        "GPT-SoVITS 插件帮助\n"
+        "使用方法：\n"
+        f"   {plugin_config.gpt_sovits_command} [text] [-e emotion] [-l language] - 生成语音，可选情绪和语言\n"
+        "   gptsovits帮助 - 显示本帮助\n"
+        "使用示例：\n"
+        f"   {plugin_config.gpt_sovits_command} 你好 - 生成一段语音\n"
+        f"   {plugin_config.gpt_sovits_command} 你好 -e 1 - 以序号为 1 的情绪生成一段语音\n"
+        f"   {plugin_config.gpt_sovits_command} hello -e 1 -l en - 以序号为 1 的情绪生成一段英文语音\n"
+        f"可选情绪：\n{emotion_options}\n"
+        f"可选语言：中文、英文、日文、中英混合、日英混合、多语种混合\n"
+        f"(记得加上命令头，可用命令头: {nonebot.get_driver().config.command_start})"
+    )

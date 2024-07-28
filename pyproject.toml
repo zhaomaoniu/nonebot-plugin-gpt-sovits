@@ -1,0 +1,23 @@
+[project]
+name = "nonebot-plugin-gpt-sovits"
+version = "0.1.0"
+description = "✨ NoneBot2 Plugin for GPT-SoVITS ✨"
+authors = [
+    {name = "zhaomaoniu", email = "2667292003@qq.com"},
+]
+dependencies = [
+    "nonebot2>=2.2.1",
+    "nonebot-plugin-alconna>=0.42.4",
+    "aiohttp>=3.9.5",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
