@@ -95,7 +95,7 @@ plugins = ["nonebot_plugin_gpt_sovits"]
 
 示例 `GPT_SOVITS_EMOTION_MAP` 配置：
 
-```json
+```
 gpt_sovits_emotion_map='[
     {
         "name": "平静",
