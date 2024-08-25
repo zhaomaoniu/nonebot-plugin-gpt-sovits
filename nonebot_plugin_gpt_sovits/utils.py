@@ -1,10 +1,10 @@
 import os
 import io
-import wave
 import aiohttp
 import tempfile
 import subprocess
 from nonebot.log import logger
+from soundfile import SoundFile
 
 
 async def generate(
@@ -43,11 +43,8 @@ async def generate(
 
 
 def get_wav_duration(wav_bytes: bytes) -> float:
-    with wave.open(io.BytesIO(wav_bytes), "rb") as wav_file:
-        frames = wav_file.getnframes()
-        rate = wav_file.getframerate()
-        duration = frames / float(rate)
-        return duration
+    with SoundFile(io.BytesIO(wav_bytes)) as f:
+        return len(f) / f.samplerate
 
 
 def _encode(
