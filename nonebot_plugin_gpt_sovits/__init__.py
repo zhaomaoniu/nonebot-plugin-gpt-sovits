@@ -92,8 +92,8 @@ help_matcher = on_command(
 @tts.handle()
 async def handle_tts(arp: Arparma):
     text: str = arp.main_args["text"]
-    emotion_index: str = arp.options["e"].value or arp.other_args["emotion"]
-    text_language: str = arp.options["l"].value or arp.other_args["language"]
+    emotion_index: str = arp.options["e"].args["emotion"] or arp.other_args["emotion"]
+    text_language: str = arp.options["l"].args["language"] or arp.other_args["language"]
 
     emotion = plugin_config.gpt_sovits_emotion_map[int(emotion_index)]
     sentence = random.choice(emotion.sentences)
