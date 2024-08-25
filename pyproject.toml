@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-gpt-sovits"
-version = "0.1.0"
+version = "0.1.1"
 description = "✨ NoneBot2 Plugin for GPT-SoVITS ✨"
 authors = [
     {name = "zhaomaoniu", email = "2667292003@qq.com"},
