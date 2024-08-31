@@ -4,7 +4,7 @@ import aiohttp
 import tempfile
 import subprocess
 from nonebot.log import logger
-from soundfile import SoundFile
+from pydub import AudioSegment
 
 
 async def generate(
@@ -43,8 +43,8 @@ async def generate(
 
 
 def get_wav_duration(wav_bytes: bytes) -> float:
-    with SoundFile(io.BytesIO(wav_bytes)) as f:
-        return len(f) / f.samplerate
+    audio = AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
+    return len(audio) / 1000
 
 
 def _encode(
