@@ -1,5 +1,6 @@
 import random
 import nonebot
+from nonebot.log import logger
 from nonebot import require, on_command
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters
 
@@ -16,7 +17,7 @@ from nonebot_plugin_alconna import (
 )
 
 from .config import Config
-from .utils import generate, get_wav_duration, encode_to_silk
+from .utils import generate, generate_v2, get_wav_duration, encode_to_silk
 
 
 if hasattr(nonebot, "get_plugin_config"):
@@ -85,7 +86,7 @@ tts = on_alconna(
     priority=10,
 )
 help_matcher = on_command(
-    "gptsovits帮助", priority=10, block=True, aliases={"gs帮助", "gshelp"}
+    "gptsovits帮助", priority=10, block=True, aliases={"gsv帮助", "gsvhelp"}
 )
 
 
@@ -101,31 +102,61 @@ async def handle_tts(arp: Arparma):
     refer_wav_path = sentence.path
     prompt_text = sentence.text
     prompt_language = sentence.language
-
-    cut_punc = plugin_config.gpt_sovits_cut_punc
-    top_k = plugin_config.gpt_sovits_top_k
-    top_p = plugin_config.gpt_sovits_top_p
-    temperature = plugin_config.gpt_sovits_temperature
-    speed = plugin_config.gpt_sovits_speed
-
     base_url = plugin_config.gpt_sovits_api_base_url
 
-    try:
-        wav_file = await generate(
-            base_url,
-            refer_wav_path,
-            prompt_text,
-            prompt_language,
-            text,
-            text_language,
-            cut_punc,
-            top_k,
-            top_p,
-            temperature,
-            speed,
-        )
-    except ValueError as e:
-        await tts.finish("生成语音时出现错误，请联系 Bot 维护者查看日志")
+    if plugin_config.gpt_sovits_api_v2:
+        try:
+            wav_file = await generate_v2(
+                base_url,
+                text,
+                text_language,
+                refer_wav_path,
+                prompt_text=prompt_text,
+                prompt_lang=prompt_language,
+                **{
+                    k: v
+                    for k, v in plugin_config.gpt_sovits_args.items()
+                    if k
+                    in [
+                        "aux_ref_audio_paths",
+                        "top_k",
+                        "top_p",
+                        "temperature",
+                        "text_split_method",
+                        "batch_size",
+                        "batch_threshold",
+                        "split_bucket",
+                        "speed_factor",
+                        "fragment_interval",
+                        "streaming_mode",
+                        "seed",
+                        "parallel_infer",
+                        "repetition_penalty",
+                    ]
+                },
+            )
+        except ValueError as e:
+            logger.error(f"生成语音时出现错误：{e}")
+            await tts.finish("生成语音时出现错误，请联系 Bot 维护者查看日志")
+    else:
+
+        try:
+            wav_file = await generate(
+                base_url,
+                refer_wav_path=refer_wav_path,
+                prompt_text=prompt_text,
+                prompt_language=prompt_language,
+                text=text,
+                text_language=text_language,
+                **{
+                    k: v
+                    for k, v in plugin_config.gpt_sovits_args.items()
+                    if k in ["cut_punc", "top_k", "top_p", "temperature", "speed"]
+                },
+            )
+        except ValueError as e:
+            logger.error(f"生成语音时出现错误：{e}")
+            await tts.finish("生成语音时出现错误，请联系 Bot 维护者查看日志")
 
     mimetype = "audio/silk" if plugin_config.gpt_sovits_convert_to_silk else "audio/wav"
     duration = int(get_wav_duration(wav_file))
