@@ -158,14 +158,9 @@ async def handle_tts(arp: Arparma):
             logger.error(f"生成语音时出现错误：{e}")
             await tts.finish("生成语音时出现错误，请联系 Bot 维护者查看日志")
 
-    mimetype = "audio/silk" if plugin_config.gpt_sovits_convert_to_silk else "audio/wav"
     duration = int(get_wav_duration(wav_file))
-
-    if plugin_config.gpt_sovits_convert_to_silk:
-        silk_file = encode_to_silk(wav_file)
-        await tts.finish(Voice(raw=silk_file, mimetype=mimetype, duration=duration))
-    else:
-        await tts.finish(Voice(raw=wav_file, mimetype=mimetype, duration=duration))
+    silk_file = encode_to_silk(wav_file)
+    await tts.finish(Voice(raw=silk_file, mimetype="audio/silk", duration=duration))
 
 
 @help_matcher.handle()

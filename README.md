@@ -91,7 +91,6 @@ plugins = ["nonebot_plugin_gpt_sovits"]
 | GPT_SOVITS_API_BASE_URL   | http://127.0.0.1:9880       | 可选。GPT-SoVITS API 的 URL |
 | GPT_SOVITS_API_V2         | True                        | 可选。是否使用 GPT-SoVITS API v2。注意：API 是否为 v2 不取决于你使用的 GPT-SoVITS 模型版本，而是由你运行的 API 脚本决定。`api_v2.py` 为 API v2，`api.py` 为 API v1 |
 | GPT_SOVITS_COMMAND        | tts                         | 可选。触发 TTS 的命令，可自定义为 GPT-SoVITS 角色名 |
-| GPT_SOVITS_CONVERT_TO_SILK| False                       | 可选。是否将生成音频转换为 SILK 格式发送 |
 | GPT_SOVITS_EMOTION_MAP    | 无默认值                     | 必填。配置情感映射 |
 | GPT_SOVITS_ARGS           | 无默认值                     | 可选。传递给 GPT-SoVITS 的额外参数，如 `{"temperature": 0.9}` |
 
@@ -114,6 +113,8 @@ plugins = ["nonebot_plugin_gpt_sovits"]
   }
 ]
 ```
+
+PS .env中每个配置项仅支持单行读取，请将缩进移除，例：GPT_SOVITS_EMOTION_MAP=[{"name": "平静","sentences": [{"text": "示例文本1", "language": "zh", "path": "路径1"}]}]
 
 ### GPT_SOVITS_ARGS 配置说明
 
@@ -156,7 +157,7 @@ plugins = ["nonebot_plugin_gpt_sovits"]
 
 ## 额外配置
 
-若启用 `GPT_SOVITS_CONVERT_TO_SILK`，请进行以下额外配置：
+由于上游依赖改变，请进行以下额外配置：
 
 1. 将 `ffmpeg` 添加到环境变量
 2. 下载 [silk_cli](https://github.com/idranme/silk-cli/releases) 并放置于 Bot 根目录，重命名为 `cli.exe`（Windows）或 `cli`（Linux）
